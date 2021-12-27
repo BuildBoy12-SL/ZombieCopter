@@ -35,7 +35,7 @@ namespace ZombieCopter.Components
 
         private void Update()
         {
-            var rotation = transform.rotation;
+            Quaternion rotation = transform.rotation;
             Vector3 angularVelocity = GetAngularVelocity(lastRotation, rotation);
             lastRotation = rotation;
             if (angularVelocity.magnitude > Plugin.Instance.Config.MinimumRotation && Plugin.Instance.Config.MaximumBoosts > boostAmount)
@@ -45,7 +45,7 @@ namespace ZombieCopter.Components
 
                 for (int i = 0; i < Plugin.Instance.Config.BoostedUnits; i++)
                 {
-                    player.Position = new Vector3(player.Position.x, player.Position.y + 1, player.Position.z);
+                    player.Position += Vector3.up;
 
                     if (Plugin.Instance.Config.PlayFlyNoise)
                         player.ReferenceHub.falldamage.RpcDoSound();
@@ -57,19 +57,19 @@ namespace ZombieCopter.Components
 
         private Vector3 GetAngularVelocity(Quaternion foreLastFrameRotation, Quaternion lastFrameRotation)
         {
-            var q = lastFrameRotation * Quaternion.Inverse(foreLastFrameRotation);
+            Quaternion q = lastFrameRotation * Quaternion.Inverse(foreLastFrameRotation);
             if (Math.Abs(q.w) > 1023.5f / 1024.0f)
-                return new Vector3(0, 0, 0);
+                return Vector3.zero;
 
             float gain;
             if (q.w < 0.0f)
             {
-                var angle = Math.Acos(-q.w);
+                double angle = Math.Acos(-q.w);
                 gain = (float)(-2.0f * angle / (Math.Sin(angle) * Time.deltaTime));
             }
             else
             {
-                var angle = Math.Acos(q.w);
+                double angle = Math.Acos(q.w);
                 gain = (float)(2.0f * angle / (Math.Sin(angle) * Time.deltaTime));
             }
 
