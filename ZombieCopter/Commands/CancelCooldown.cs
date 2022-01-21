@@ -31,46 +31,64 @@ namespace ZombieCopter.Commands
         /// <inheritdoc />
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
-            if (!sender.CheckPermission("zc.bypass"))
+            Player player = Player.Get(sender);
+            if (player != null && !sender.CheckPermission("zc.bypass"))
             {
                 response = "Insufficient permission. Required: zc.bypass";
                 return false;
             }
 
-            Player player = Player.Get(sender);
+            if (player == null)
+                return HandleServerCommand(arguments, out response);
+
+            return HandlePlayerCommand(arguments, player, out response);
+        }
+
+        private bool HandleServerCommand(ArraySegment<string> arguments, out string response)
+        {
+            if (arguments.Count == 0 || string.IsNullOrEmpty(arguments.At(0)))
+            {
+                response = "You must specify a target to bypass.";
+                return false;
+            }
+
+            Player player = Player.Get(arguments.At(0));
             if (player == null)
             {
-                response = "This command must be executed from the game level.";
+                response = "Unable to find a player with the specified parameters.";
                 return false;
             }
 
-            if (arguments.Count > 0)
+            if (!player.GameObject.TryGetComponent(out ZombieComponent zombieComponent))
             {
-                if (!(Player.Get(arguments.At(0)) is Player target))
-                {
-                    response = $"Could not find a player from '{arguments.At(0)}'";
-                    return false;
-                }
-
-                player = target;
-            }
-
-            if (player.Role != RoleType.Scp0492)
-            {
-                response = $"The target ({player.Nickname}) must be a Scp049-2 to use this command on them.";
+                response = $"The target player ({player.Nickname}) does not have attached copter logic.";
                 return false;
             }
 
-            if (!player.GameObject.TryGetComponent(out ZombieComponent targetZombieComponent))
-            {
-                response = $"The target ({player.Nickname}) does not have an attached {nameof(ZombieComponent)}.";
-                return false;
-            }
-
-            targetZombieComponent.HasCooldown = !targetZombieComponent.HasCooldown;
-            response = targetZombieComponent.HasCooldown
+            zombieComponent.HasCooldown = !zombieComponent.HasCooldown;
+            response = zombieComponent.HasCooldown
                 ? $"The cooldown of {player.Nickname} has been enabled."
                 : $"The cooldown of {player.Nickname} has been disabled.";
+
+            return true;
+        }
+
+        private bool HandlePlayerCommand(ArraySegment<string> arguments, Player sender, out string response)
+        {
+            if (arguments.Count != 0 || string.IsNullOrEmpty(arguments.At(0)))
+                return HandleServerCommand(arguments, out response);
+
+            if (!sender.GameObject.TryGetComponent(out ZombieComponent zombieComponent))
+            {
+                response = $"You do not have attached copter logic.";
+                return false;
+            }
+
+            zombieComponent.HasCooldown = !zombieComponent.HasCooldown;
+            response = zombieComponent.HasCooldown
+                ? $"Cooldown enabled."
+                : $"Cooldown disabled.";
+
             return true;
         }
     }

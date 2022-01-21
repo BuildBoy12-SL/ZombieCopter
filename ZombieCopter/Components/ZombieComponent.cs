@@ -18,6 +18,7 @@ namespace ZombieCopter.Components
     /// </summary>
     public class ZombieComponent : MonoBehaviour
     {
+        private Config config;
         private Player player;
         private Quaternion lastRotation;
         private int boostAmount;
@@ -29,8 +30,9 @@ namespace ZombieCopter.Components
 
         private void Awake()
         {
+            config = Plugin.Instance.Config;
             player = Player.Get(gameObject);
-            player.ShowHint(Plugin.Instance.Config.Hint, Plugin.Instance.Config.HintDuration);
+            player.ShowHint(config.Hint, config.HintDuration);
         }
 
         private void Update()
@@ -38,16 +40,17 @@ namespace ZombieCopter.Components
             Quaternion rotation = transform.rotation;
             Vector3 angularVelocity = GetAngularVelocity(lastRotation, rotation);
             lastRotation = rotation;
-            if (angularVelocity.magnitude > Plugin.Instance.Config.MinimumRotation && Plugin.Instance.Config.MaximumBoosts > boostAmount)
+
+            if (angularVelocity.magnitude > config.MinimumRotation && config.MaximumBoosts > boostAmount)
             {
                 if (HasCooldown && boostAmount <= 0)
                     Timing.RunCoroutine(RunCooldown());
 
-                for (int i = 0; i < Plugin.Instance.Config.BoostedUnits; i++)
+                for (int i = 0; i < config.BoostedUnits; i++)
                 {
                     player.Position += Vector3.up;
 
-                    if (Plugin.Instance.Config.PlayFlyNoise)
+                    if (config.PlayFlyNoise)
                         player.ReferenceHub.falldamage.RpcDoSound();
                 }
 
@@ -78,7 +81,7 @@ namespace ZombieCopter.Components
 
         private IEnumerator<float> RunCooldown()
         {
-            yield return Timing.WaitForSeconds(Plugin.Instance.Config.SecondsPerInterval);
+            yield return Timing.WaitForSeconds(config.SecondsPerInterval);
             boostAmount = 0;
         }
     }
